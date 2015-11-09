@@ -13,7 +13,7 @@ type CacheAdapter struct {
 }
 
 func New(address string, intervall time.Duration, timeout time.Duration, maxRetries int) *CacheAdapter {
-	return &CacheAdapter{address, intervall, timeout, maxRetries}
+	return &CacheAdapter{intervall, timeout, address, maxRetries}
 }
 
 func (adapter *CacheAdapter) Resolve(name string) (string, error) {
@@ -21,7 +21,7 @@ func (adapter *CacheAdapter) Resolve(name string) (string, error) {
 }
 
 func (adapter *CacheAdapter) Configure(services ...string) error {
-	_ := servicecache.Configure(adapter.consulAddress, adapter.intervall, services...)
+	_, _ = servicecache.Configure(adapter.consulAddress, adapter.intervall, services...)
 	return servicecache.Start(adapter.maxRetries, adapter.timeout)
 }
 
