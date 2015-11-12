@@ -14,6 +14,19 @@ type ServiceClient struct {
 	backendAdapter BackendAdapter
 }
 
+type ServiceCaller interface {
+	Get(path string, headers ...string) (*http.Response, error)
+	GetSecure(path string, headers ...string) (*http.Response, error)
+	Delete(path string, headers ...string) (*http.Response, error)
+	DeleteSecure(path string, headers ...string) (*http.Response, error)
+	Post(path string, bodyType string, body io.Reader, headers ...string) (*http.Response, error)
+	PostSecure(path string, bodyType string, body io.Reader, headers ...string) (*http.Response, error)
+	Put(path string, bodyType string, body io.Reader, headers ...string) (*http.Response, error)
+	PutSecure(path string, bodyType string, body io.Reader, headers ...string) (*http.Response, error)
+	Patch(path string, bodyType string, body io.Reader, headers ...string) (*http.Response, error)
+	PatchSecure(path string, bodyType string, body io.Reader, headers ...string) (*http.Response, error)
+}
+
 type BackendAdapter interface {
 	Resolve(name string) (string, error)
 	Configure(services ...string) error
