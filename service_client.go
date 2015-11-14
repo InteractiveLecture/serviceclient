@@ -171,5 +171,5 @@ func prepareRequest(requestType string, url string, body io.Reader, headers []st
 
 func (client *ServiceClient) resolvePath(path string, schema string) string {
 	address, _ := client.backendAdapter.Resolve(client.Service)
-	return fmt.Sprintf("%s://%s/%s", address, path)
+	return fmt.Sprintf("%s://%s/%s", schema, address, path)
 }
