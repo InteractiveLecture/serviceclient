@@ -4,9 +4,10 @@
 package mocks
 
 import (
-	gomock "github.com/golang/mock/gomock"
 	io "io"
 	http "net/http"
+
+	gomock "github.com/golang/mock/gomock"
 )
 
 // Mock of ServiceCaller interface

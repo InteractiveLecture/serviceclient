@@ -171,5 +171,8 @@ func prepareRequest(requestType string, url string, body io.Reader, headers []st
 
 func (client *ServiceClient) resolvePath(path string, schema string) string {
 	address, _ := client.backendAdapter.Resolve(client.Service)
+	if s.HasPrefix(address, "http") || s.HasPrefix(address, "https") {
+		return fmt.Sprintf("%s/%s", address, path)
+	}
 	return fmt.Sprintf("%s://%s/%s", schema, address, path)
 }
