@@ -1,9 +1,0 @@
-package: serviceclient
-import:
-- package: github.com/InteractiveLecture/servicecache
-- package: github.com/golang/mock
-  subpackages:
-  - /gomock
-- package: github.com/stretchr/testify
-  subpackages:
-  - /assert

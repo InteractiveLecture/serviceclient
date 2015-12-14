@@ -1,4 +1,4 @@
-package test
+package servicetest
 
 import (
 	"net/http"
@@ -10,7 +10,7 @@ import (
 )
 
 func Service(controller *gomock.Controller, serviceName string, handler http.Handler) *httptest.Server {
-	mockBackend := mocks.NewMockBackendAdapter(controller)
+	mockBackend := servicemocks.NewMockBackendAdapter(controller)
 	server := httptest.NewServer(handler)
 	mockBackend.EXPECT().Resolve(serviceName).Return(server.URL, nil)
 	mockBackend.EXPECT().Configure(serviceName).Return(nil)

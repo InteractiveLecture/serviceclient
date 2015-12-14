@@ -1,4 +1,4 @@
-package test
+package servicetest
 
 import (
 	"fmt"
@@ -13,14 +13,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func prepareMock(t *testing.T) (*mocks.MockBackendAdapter, *gomock.Controller) {
+func prepareMock(t *testing.T) (*servicemocks.MockBackendAdapter, *gomock.Controller) {
 	mockCtrl := gomock.NewController(t)
-	mock := mocks.NewMockBackendAdapter(mockCtrl)
+	mock := servicemocks.NewMockBackendAdapter(mockCtrl)
 	mock.EXPECT().Configure("acl-service", "authentication-service").Return(nil)
 	return mock, mockCtrl
 }
 
-func prepareService(t *testing.T) (*mocks.MockBackendAdapter, *gomock.Controller) {
+func prepareService(t *testing.T) (*servicemocks.MockBackendAdapter, *gomock.Controller) {
 	mock, mockCtrl := prepareMock(t)
 	serviceclient.Configure(mock, "acl-service", "authentication-service")
 	return mock, mockCtrl
@@ -144,48 +144,3 @@ func checkResponse(t *testing.T, resp *http.Response, err error) {
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 }
-
-/*
-func testGet(t *testing.T, mock *mocks.MockBackendAdapter, instance *ServiceClient) {
-	return instance.Get("/bla/blubb")
-}
-
-func testGetSecure(t *testing.T, mock *mocks.MockBackendAdapter, instance *ServiceClient) {
-	return instance.GetSecure("/bla/blubb")
-
-}
-
-func testDelete(instance *ServiceClient) {
-return instance.Delete("/bla/blubb")
-}
-func testDeleteSecure(t *testing.T, mock *mocks.MockBackendAdapter, instance *ServiceClient) {
-	resp, err := instance.DeleteSecure("/bla/blubb")
-	checkResponse(t, resp, err)
-}
-
-func testPost(t *testing.T, mock *mocks.MockBackendAdapter, instance *ServiceClient, reader io.Reader) {
-	resp, err := instance.Post("/bla/blubb", "application/json", reader)
-	checkResponse(t, resp, err)
-}
-
-func testPostSecure(t *testing.T, mock *mocks.MockBackendAdapter, instance *ServiceClient, reader io.Reader) {
-	resp, err := instance.PostSecure("/bla/blubb", "application/json", reader)
-	checkResponse(t, resp, err)
-}
-
-func testPatch(t *testing.T, mock *mocks.MockBackendAdapter, instance *ServiceClient, reader io.Reader) {
-	resp, err := instance.Patch("/bla/blubb", "application/json", reader)
-	checkResponse(t, resp, err)
-}
-func testPatchSecure(t *testing.T, mock *mocks.MockBackendAdapter, instance *ServiceClient, reader io.Reader) {
-	resp, err := instance.PatchSecure("/bla/blubb", "application/json", reader)
-	checkResponse(t, resp, err)
-}
-func testPut(t *testing.T, mock *mocks.MockBackendAdapter, instance *ServiceClient, reader io.Reader) {
-	resp, err := instance.Put("/bla/blubb", "application/json", reader)
-	checkResponse(t, resp, err)
-}
-func testPutSecure(t *testing.T, mock *mocks.MockBackendAdapter, instance *ServiceClient, reader io.Reader) {
-	resp, err := instance.PutSecure("/bla/blubb", "application/json", reader)
-	checkResponse(t, resp, err)
-}*/
