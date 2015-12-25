@@ -4,54 +4,30 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	s "strings"
+
+	"github.com/miekg/dns"
 )
 
 type ServiceClient struct {
-	HttpClient     *http.Client
-	Service        string
-	backendAdapter BackendAdapter
+	HttpClient *http.Client
+	Service    string
 }
 
-type ServiceCaller interface {
-	Get(path string, headers ...string) (*http.Response, error)
-	GetSecure(path string, headers ...string) (*http.Response, error)
-	Delete(path string, headers ...string) (*http.Response, error)
-	DeleteSecure(path string, headers ...string) (*http.Response, error)
-	Post(path string, bodyType string, body io.Reader, headers ...string) (*http.Response, error)
-	PostSecure(path string, bodyType string, body io.Reader, headers ...string) (*http.Response, error)
-	Put(path string, bodyType string, body io.Reader, headers ...string) (*http.Response, error)
-	PutSecure(path string, bodyType string, body io.Reader, headers ...string) (*http.Response, error)
-	Patch(path string, bodyType string, body io.Reader, headers ...string) (*http.Response, error)
-	PatchSecure(path string, bodyType string, body io.Reader, headers ...string) (*http.Response, error)
-}
+var Resolver AddressResolver = ConsulDnsAddressResolver{"discovery-service:8600"}
 
-type BackendAdapter interface {
-	Resolve(name string) (string, error)
-	Configure(services ...string) error
-	Refresh() error
-}
-
-var instances = make(map[string]*ServiceClient)
-
-func Configure(backendAdapter BackendAdapter, services ...string) error {
-	for _, service := range services {
-		instances[service] = New(service, backendAdapter)
-	}
-	return backendAdapter.Configure(services...)
-}
-
-func New(service string, backendAdapter BackendAdapter) *ServiceClient {
-	return &ServiceClient{http.DefaultClient, service, backendAdapter}
-}
-
-func GetInstance(service string) *ServiceClient {
-	return instances[service]
+func New(service string) *ServiceClient {
+	return &ServiceClient{http.DefaultClient, service}
 }
 
 func (client *ServiceClient) Get(path string, headers ...string) (*http.Response, error) {
-	req, err := prepareRequest("GET", client.resolvePath(path, "http"), nil, headers)
+	address, err := client.resolvePath(path, "http")
+	if err != nil {
+		return nil, err
+	}
+	req, err := prepareRequest("GET", address, nil, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +35,11 @@ func (client *ServiceClient) Get(path string, headers ...string) (*http.Response
 }
 
 func (client *ServiceClient) GetSecure(path string, headers ...string) (*http.Response, error) {
-	req, err := prepareRequest("GET", client.resolvePath(path, "https"), nil, headers)
+	address, err := client.resolvePath(path, "https")
+	if err != nil {
+		return nil, err
+	}
+	req, err := prepareRequest("GET", address, nil, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -67,8 +47,12 @@ func (client *ServiceClient) GetSecure(path string, headers ...string) (*http.Re
 }
 
 func (client *ServiceClient) Post(path string, bodyType string, body io.Reader, headers ...string) (*http.Response, error) {
+	address, err := client.resolvePath(path, "http")
+	if err != nil {
+		return nil, err
+	}
 	headers = append(headers, fmt.Sprintf("Content-Type:%s", bodyType))
-	req, err := prepareRequest("POST", client.resolvePath(path, "http"), body, headers)
+	req, err := prepareRequest("POST", address, body, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -76,8 +60,12 @@ func (client *ServiceClient) Post(path string, bodyType string, body io.Reader, 
 }
 
 func (client *ServiceClient) PostSecure(path string, bodyType string, body io.Reader, headers ...string) (*http.Response, error) {
+	address, err := client.resolvePath(path, "https")
+	if err != nil {
+		return nil, err
+	}
 	headers = append(headers, fmt.Sprintf("Content-Type:%s", bodyType))
-	req, err := prepareRequest("POST", client.resolvePath(path, "https"), body, headers)
+	req, err := prepareRequest("POST", address, body, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -85,8 +73,12 @@ func (client *ServiceClient) PostSecure(path string, bodyType string, body io.Re
 }
 
 func (client *ServiceClient) Put(path string, bodyType string, body io.Reader, headers ...string) (*http.Response, error) {
+	address, err := client.resolvePath(path, "http")
+	if err != nil {
+		return nil, err
+	}
 	headers = append(headers, fmt.Sprintf("Content-Type:%s", bodyType))
-	req, err := prepareRequest("PUT", client.resolvePath(path, "http"), body, headers)
+	req, err := prepareRequest("PUT", address, body, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -94,8 +86,12 @@ func (client *ServiceClient) Put(path string, bodyType string, body io.Reader, h
 }
 
 func (client *ServiceClient) PutSecure(path string, bodyType string, body io.Reader, headers ...string) (*http.Response, error) {
+	address, err := client.resolvePath(path, "https")
+	if err != nil {
+		return nil, err
+	}
 	headers = append(headers, fmt.Sprintf("Content-Type:%s", bodyType))
-	req, err := prepareRequest("PUT", client.resolvePath(path, "https"), body, headers)
+	req, err := prepareRequest("PUT", address, body, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -103,8 +99,12 @@ func (client *ServiceClient) PutSecure(path string, bodyType string, body io.Rea
 }
 
 func (client *ServiceClient) Patch(path string, bodyType string, body io.Reader, headers ...string) (*http.Response, error) {
+	address, err := client.resolvePath(path, "http")
+	if err != nil {
+		return nil, err
+	}
 	headers = append(headers, fmt.Sprintf("Content-Type:%s", bodyType))
-	req, err := prepareRequest("PATCH", client.resolvePath(path, "http"), body, headers)
+	req, err := prepareRequest("PATCH", address, body, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -112,8 +112,12 @@ func (client *ServiceClient) Patch(path string, bodyType string, body io.Reader,
 }
 
 func (client *ServiceClient) PatchSecure(path string, bodyType string, body io.Reader, headers ...string) (*http.Response, error) {
+	address, err := client.resolvePath(path, "https")
+	if err != nil {
+		return nil, err
+	}
 	headers = append(headers, fmt.Sprintf("Content-Type:%s", bodyType))
-	req, err := prepareRequest("PATCH", client.resolvePath(path, "https"), body, headers)
+	req, err := prepareRequest("PATCH", address, body, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +125,11 @@ func (client *ServiceClient) PatchSecure(path string, bodyType string, body io.R
 }
 
 func (client *ServiceClient) Delete(path string, headers ...string) (*http.Response, error) {
-	req, err := prepareRequest("DELETE", client.resolvePath(path, "http"), nil, headers)
+	address, err := client.resolvePath(path, "http")
+	if err != nil {
+		return nil, err
+	}
+	req, err := prepareRequest("DELETE", address, nil, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -129,20 +137,19 @@ func (client *ServiceClient) Delete(path string, headers ...string) (*http.Respo
 }
 
 func (client *ServiceClient) DeleteSecure(path string, headers ...string) (*http.Response, error) {
-	req, err := prepareRequest("DELETE", client.resolvePath(path, "https"), nil, headers)
+	address, err := client.resolvePath(path, "https")
+	if err != nil {
+		return nil, err
+	}
+	req, err := prepareRequest("DELETE", address, nil, headers)
 	if err != nil {
 		return nil, err
 	}
 	return client.sendRequest(req)
 }
 
-func (client *ServiceClient) sendRequest(req *http.Request) (resp *http.Response, err error) {
-	resp, err = client.HttpClient.Do(req)
-	if err != nil {
-		client.backendAdapter.Refresh()
-		resp, err = client.HttpClient.Do(req)
-	}
-	return
+func (client *ServiceClient) sendRequest(req *http.Request) (*http.Response, error) {
+	return client.HttpClient.Do(req)
 }
 
 func addHeaders(req *http.Request, headers []string) error {
@@ -169,10 +176,37 @@ func prepareRequest(requestType string, url string, body io.Reader, headers []st
 	return
 }
 
-func (client *ServiceClient) resolvePath(path string, schema string) string {
-	address, _ := client.backendAdapter.Resolve(client.Service)
-	if s.HasPrefix(address, "http") || s.HasPrefix(address, "https") {
-		return fmt.Sprintf("%s/%s", address, path)
+type AddressResolver interface {
+	Resolve(serviceName string) (string, error)
+}
+
+type ConsulDnsAddressResolver struct {
+	ServerAddress string
+}
+
+func (client *ServiceClient) resolvePath(path string, schema string) (string, error) {
+	address, err := Resolver.Resolve(client.Service)
+	if err != nil {
+		return "", err
 	}
-	return fmt.Sprintf("%s://%s/%s", schema, address, path)
+	if s.HasPrefix(address, "http") || s.HasPrefix(address, "https") {
+		return fmt.Sprintf("%s/%s", address, path), nil
+	}
+	return fmt.Sprintf("%s://%s/%s", schema, address, path), nil
+}
+
+func (resolver ConsulDnsAddressResolver) Resolve(service string) (string, error) {
+	m1 := new(dns.Msg)
+	m1.Id = dns.Id()
+	m1.RecursionDesired = true
+	m1.SetQuestion(service+".service.consul.", dns.TypeA)
+	c := new(dns.Client)
+	in, _, err := c.Exchange(m1, resolver.ServerAddress)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if len(in.Answer) > 0 {
+		return in.Answer[0].(*dns.A).A.String(), nil
+	}
+	return "", errors.New("Could not resolve service address")
 }
