@@ -14,12 +14,17 @@ import (
 type ServiceClient struct {
 	HttpClient *http.Client
 	Service    string
+	Resolver   AddressResolver
 }
 
-var Resolver AddressResolver = ConsulDnsAddressResolver{"discovery-service:8600"}
+type AddressResolverFactory func() AddressResolver
+
+var ResolverFactory = func() AddressResolver {
+	return ConsulDnsAddressResolver{"discovery-service:8600"}
+}
 
 func New(service string) *ServiceClient {
-	return &ServiceClient{http.DefaultClient, service}
+	return &ServiceClient{http.DefaultClient, service, ResolverFactory()}
 }
 
 func (client *ServiceClient) Get(path string, headers ...string) (*http.Response, error) {
@@ -185,7 +190,7 @@ type ConsulDnsAddressResolver struct {
 }
 
 func (client *ServiceClient) resolvePath(path string, schema string) (string, error) {
-	address, err := Resolver.Resolve(client.Service)
+	address, err := client.Resolver.Resolve(client.Service)
 	if err != nil {
 		return "", err
 	}
