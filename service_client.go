@@ -20,7 +20,7 @@ type ServiceClient struct {
 type AddressResolverFactory func() AddressResolver
 
 var ResolverFactory = func() AddressResolver {
-	return ConsulDnsAddressResolver{"discovery-service:8600"}
+	return ConsulDnsAddressResolver{"discovery:53"}
 }
 
 func New(service string) *ServiceClient {
