@@ -169,6 +169,7 @@ func addHeaders(req *http.Request, headers []string) error {
 }
 
 func prepareRequest(requestType string, url string, body io.Reader, headers []string) (req *http.Request, err error) {
+	log.Printf("sending %s request to: %s", requestType, url)
 	req, err = http.NewRequest(requestType, url, body)
 	if err != nil {
 		return
@@ -194,10 +195,11 @@ func (client *ServiceClient) resolvePath(path string, schema string) (string, er
 	if err != nil {
 		return "", err
 	}
+	address = address + ":8080"
 	if s.HasPrefix(address, "http") || s.HasPrefix(address, "https") {
 		return fmt.Sprintf("%s/%s", address, path), nil
 	}
-	return fmt.Sprintf("%s://%s/%s", schema, address, path), nil
+	return fmt.Sprintf("%s://%s%s", schema, address, path), nil
 }
 
 func (resolver ConsulDnsAddressResolver) Resolve(service string) (string, error) {
