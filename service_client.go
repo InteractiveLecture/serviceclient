@@ -56,7 +56,7 @@ func (client *ServiceClient) Post(path string, bodyType string, body io.Reader, 
 	if err != nil {
 		return nil, err
 	}
-	headers = append(headers, fmt.Sprintf("Content-Type:%s", bodyType))
+	headers = append(headers, "Content-Type", bodyType)
 	req, err := prepareRequest("POST", address, body, headers)
 	if err != nil {
 		return nil, err
@@ -69,7 +69,7 @@ func (client *ServiceClient) PostSecure(path string, bodyType string, body io.Re
 	if err != nil {
 		return nil, err
 	}
-	headers = append(headers, fmt.Sprintf("Content-Type:%s", bodyType))
+	headers = append(headers, "Content-Type", bodyType)
 	req, err := prepareRequest("POST", address, body, headers)
 	if err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func (client *ServiceClient) Put(path string, bodyType string, body io.Reader, h
 	if err != nil {
 		return nil, err
 	}
-	headers = append(headers, fmt.Sprintf("Content-Type:%s", bodyType))
+	headers = append(headers, "Content-Type", bodyType)
 	req, err := prepareRequest("PUT", address, body, headers)
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func (client *ServiceClient) PutSecure(path string, bodyType string, body io.Rea
 	if err != nil {
 		return nil, err
 	}
-	headers = append(headers, fmt.Sprintf("Content-Type:%s", bodyType))
+	headers = append(headers, "Content-Type", bodyType)
 	req, err := prepareRequest("PUT", address, body, headers)
 	if err != nil {
 		return nil, err
@@ -108,7 +108,7 @@ func (client *ServiceClient) Patch(path string, bodyType string, body io.Reader,
 	if err != nil {
 		return nil, err
 	}
-	headers = append(headers, fmt.Sprintf("Content-Type:%s", bodyType))
+	headers = append(headers, "Content-Type", bodyType)
 	req, err := prepareRequest("PATCH", address, body, headers)
 	if err != nil {
 		return nil, err
@@ -121,7 +121,7 @@ func (client *ServiceClient) PatchSecure(path string, bodyType string, body io.R
 	if err != nil {
 		return nil, err
 	}
-	headers = append(headers, fmt.Sprintf("Content-Type:%s", bodyType))
+	headers = append(headers, "Content-Type", bodyType)
 	req, err := prepareRequest("PATCH", address, body, headers)
 	if err != nil {
 		return nil, err
@@ -158,12 +158,11 @@ func (client *ServiceClient) sendRequest(req *http.Request) (*http.Response, err
 }
 
 func addHeaders(req *http.Request, headers []string) error {
-	for _, header := range headers {
-		parts := s.Split(header, ":")
-		if len(parts) < 2 {
-			return errors.New("not a valid header")
-		}
-		req.Header.Set(parts[0], parts[1])
+	if len(headers)%2 != 0 {
+		return errors.New("invalid headers length")
+	}
+	for i := 0; i < len(headers); i = i + 2 {
+		req.Header.Set(headers[i], headers[i+1])
 	}
 	return nil
 }
