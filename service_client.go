@@ -212,6 +212,7 @@ func (resolver ConsulDnsAddressResolver) Resolve(service string) (string, error)
 		log.Fatal(err)
 	}
 	if len(in.Answer) > 0 {
+		log.Println(in.Answer)
 		return in.Answer[0].(*dns.A).A.String(), nil
 	}
 	return "", errors.New("Could not resolve service address")
